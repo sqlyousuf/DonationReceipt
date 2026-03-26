@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masjid Ibrahim — Donation Receipt</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green-dark: #0a4a2e;
+    --green-mid: #1a6b42;
+    --green-light: #e8f5ee;
+    --green-accent: #27a760;
+    --gold: #c9a84c;
+    --gold-light: #fdf6e3;
+    --text: #1a1a1a;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --white: #ffffff;
+    --bg: #f5f7f5;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .config-banner { background: #fffbeb; border-bottom: 1px solid #fde68a; padding: 10px 24px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #92400e; }
+  .config-banner.hidden { display: none; }
+  .config-link { margin-left: auto; font-size: 12px; color: #92400e; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+
+  .header { background: var(--green-dark); padding: 26px 32px 22px; display: flex; align-items: center; gap: 18px; position: relative; overflow: hidden; }
+  .logo-circle { width: 50px; height: 50px; background: rgba(255,255,255,0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-circle svg { width: 28px; height: 28px; }
+  .header-copy h1 { font-family: 'Amiri', serif; font-size: 20px; color: white; margin-bottom: 2px; letter-spacing: 0.2px; }
+  .header-copy p { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 300; letter-spacing: 0.6px; text-transform: uppercase; }
+  .header-arabic { margin-left: auto; font-family: 'Amiri', serif; font-size: 20px; color: rgba(255,255,255,0.35); letter-spacing: 2px; padding-right: 4px; }
+
+  .main { max-width: 660px; margin: 0 auto; padding: 28px 24px 40px; }
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 24px 26px; margin-bottom: 16px; }
+  .section-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.3px; color: var(--green-mid); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 11.5px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.2px; }
+  .req { color: var(--green-accent); }
+  input, select, textarea { font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; background: white; color: var(--text); transition: border-color 0.18s, box-shadow 0.18s; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--green-accent); box-shadow: 0 0 0 3px rgba(39,167,96,0.1); }
+  input::placeholder { color: #c5c9d1; }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .amount-wrap { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; background: white; transition: border-color 0.18s, box-shadow 0.18s; }
+  .amount-wrap:focus-within { border-color: var(--green-accent); box-shadow: 0 0 0 3px rgba(39,167,96,0.1); }
+  .amount-prefix { padding: 9px 13px; background: #f9fafb; font-size: 14px; font-weight: 500; color: var(--text-muted); border-right: 1.5px solid var(--border); flex-shrink: 0; }
+  .amount-wrap input { border: none; border-radius: 0; box-shadow: none !important; }
+
+  .pay-tabs { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  .pay-tab { padding: 11px 8px 10px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.18s; background: white; user-select: none; }
+  .pay-tab:hover { border-color: var(--green-accent); background: var(--green-light); }
+  .pay-tab.active { border-color: var(--green-accent); background: var(--green-light); }
+  .pay-tab .ti { font-size: 20px; margin-bottom: 3px; line-height: 1; }
+  .pay-tab .tn { font-size: 12px; font-weight: 500; color: var(--green-dark); }
+
+  #checkWrap { display: none; margin-bottom: 14px; flex-direction: column; gap: 5px; }
+  #checkWrap.show { display: flex; }
+
+  .btn-submit { width: 100%; padding: 14px 20px; background: var(--green-dark); color: white; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 9px; letter-spacing: 0.2px; }
+  .btn-submit:hover:not(:disabled) { background: var(--green-mid); }
+  .btn-submit:active:not(:disabled) { transform: scale(0.99); }
+  .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-submit.sent { background: #166534; }
+
+  .status { display: none; align-items: flex-start; gap: 10px; padding: 13px 16px; border-radius: 9px; font-size: 13.5px; margin-top: 14px; line-height: 1.5; }
+  .status.show { display: flex; }
+  .status.success { background: var(--green-light); color: var(--green-dark); border: 1px solid rgba(39,167,96,0.25); }
+  .status.error   { background: var(--red-light); color: var(--red); border: 1px solid rgba(220,38,38,0.2); }
+  .status.loading { background: var(--gold-light); color: #78350f; border: 1px solid rgba(201,168,76,0.35); }
+  .status-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.65s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 480px; }
+  .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--green-dark); }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+  .modal .field { margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-save { flex: 1; padding: 11px; background: var(--green-dark); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .btn-save:hover { background: var(--green-mid); }
+  .btn-cancel { padding: 11px 18px; background: white; color: var(--text-muted); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+  .tip-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #166534; margin-top: 4px; line-height: 1.7; }
+  code { background: #dcfce7; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
+  .footer-note { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0 0; line-height: 1.8; }
+
+  @media (max-width: 520px) {
+    .main { padding: 16px 14px 32px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .header-arabic { display: none; }
+    .header { padding: 18px 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="config-banner" id="configBanner">
+  <span>⚙️</span>
+  <span><strong>Setup required:</strong> Add your EmailJS keys before sending receipts.</span>
+  <span class="config-link" onclick="openConfig()">Configure now →</span>
+</div>
+
+<div class="header">
+  <div class="logo-circle">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 2s-1.5 2-1.5 3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5C17.5 4 16 2 16 2z" fill="rgba(255,255,255,0.9)"/>
+      <path d="M8 8h2v2H8V8zm14 0h2v2h-2V8z" fill="rgba(255,255,255,0.7)"/>
+      <path d="M6 10.5C6 9.12 7.12 8 8.5 8h3C12.88 8 14 9.12 14 10.5V11h-2v11H6V10.5z" fill="white"/>
+      <path d="M18 10.5C18 9.12 19.12 8 20.5 8h3C24.88 8 26 9.12 26 10.5V11h-2v11h-6V10.5z" fill="white"/>
+      <path d="M13 9.5C13 8.12 14.12 7 15.5 7h1C17.88 7 19 8.12 19 9.5V11h-6V9.5z" fill="rgba(255,255,255,0.85)"/>
+      <rect x="4" y="22" width="24" height="2" rx="1" fill="white"/>
+    </svg>
+  </div>
+  <div class="header-copy">
+    <h1>Masjid Ibrahim</h1>
+    <p>American Waqf Foundation · Spring, TX</p>
+  </div>
+  <div class="header-arabic">بسم الله</div>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="section-label">Donor Information</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Full Name <span class="req">*</span></label>
+        <input type="text" id="name" placeholder="Ahmed Al-Farsi" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Email Address <span class="req">*</span></label>
+        <input type="email" id="email" placeholder="donor@email.com" />
+      </div>
+      <div class="field">
+        <label>Phone Number</label>
+        <input type="tel" id="phone" placeholder="+1 (832) 000-0000" />
+      </div>
+      <div class="field">
+        <label>Mailing Address <span style="font-weight:300;font-size:10.5px">(optional)</span></label>
+        <input type="text" id="address" placeholder="Street, City, State ZIP" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Donation Details</div>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div class="field">
+        <label>Amount <span class="req">*</span></label>
+        <div class="amount-wrap">
+          <span class="amount-prefix">$</span>
+          <input type="number" id="amount" placeholder="0.00" min="1" step="0.01" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Donation Date</label>
+        <input type="date" id="donDate" />
+      </div>
+    </div>
+
+    <label style="font-size:11.5px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:10px">
+      Payment Method <span class="req">*</span>
+    </label>
+    <div class="pay-tabs">
+      <div class="pay-tab active" data-m="cash" onclick="setMethod('cash')">
+        <div class="ti">💵</div><div class="tn">Cash</div>
+      </div>
+      <div class="pay-tab" data-m="zelle" onclick="setMethod('zelle')">
+        <div class="ti">📱</div><div class="tn">Zelle</div>
+      </div>
+      <div class="pay-tab" data-m="check" onclick="setMethod('check')">
+        <div class="ti">📝</div><div class="tn">Check</div>
+      </div>
+    </div>
+
+    <div id="checkWrap">
+      <label>Check Number</label>
+      <input type="text" id="checkNum" placeholder="e.g. 1042" />
+    </div>
+
+    <div class="field">
+      <label>Purpose / Notes <span style="font-weight:300;font-size:10.5px">(optional)</span></label>
+      <textarea id="notes" placeholder="e.g. General donation, Ramadan Sadaqah, Building fund…"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-submit" id="sendBtn" onclick="sendReceipt()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+    Send Donation Receipt
+  </button>
+
+  <div class="status" id="statusBar"></div>
+
+  <div class="footer-note" style="margin-top:20px">
+    Receipt emailed to donor · copy sent to <a href="mailto:adminmasjidibrahim@gmail.com">adminmasjidibrahim@gmail.com</a><br>
+    Masjid Ibrahim · 5500 FM 2920, Spring TX 77388 · (832) 743-8303
+  </div>
+
+  <div style="text-align:center;margin-top:18px">
+    <button onclick="openConfig()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;transition:background 0.15s" onmouseover="this.style.background='#eef2ee'" onmouseout="this.style.background='none'">
+      ⚙️ EmailJS Settings
+    </button>
+  </div>
+</div>
+
+<!-- Config Modal -->
+<div class="modal-overlay" id="configModal">
+  <div class="modal">
+    <h2>⚙️ EmailJS Configuration</h2>
+    <p>Sign up free at <a href="https://emailjs.com" target="_blank" style="color:var(--green-mid);font-weight:500">emailjs.com</a>, connect the masjid Gmail, create a template, then paste your 3 keys below. They're saved in the browser — you only do this once per device.</p>
+    <div class="field">
+      <label>Public Key</label>
+      <input type="text" id="cfg-pub" placeholder="e.g. aBcDeFgHiJkLmNoP" />
+    </div>
+    <div class="field">
+      <label>Service ID</label>
+      <input type="text" id="cfg-svc" placeholder="e.g. service_abc1234" />
+    </div>
+    <div class="field">
+      <label>Template ID</label>
+      <input type="text" id="cfg-tpl" placeholder="e.g. template_abc1234" />
+    </div>
+    <div class="tip-box">
+      <strong>Template variables to use in EmailJS dashboard:</strong><br>
+      <code>{{to_email}}</code> &nbsp;<code>{{to_name}}</code> &nbsp;<code>{{subject}}</code> &nbsp;<code>{{html_body}}</code><br><br>
+      Set <strong>To Email</strong> = <code>{{to_email}}</code><br>
+      Add a <strong>BCC</strong> field = <code>adminmasjidibrahim@gmail.com</code> to always get a copy.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfig()">Cancel</button>
+      <button class="btn-save" onclick="saveConfig()">Save & Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEYS = { pub:'ejs_pub', svc:'ejs_svc', tpl:'ejs_tpl' };
+
+function loadCfg() {
+  return { pub: localStorage.getItem(KEYS.pub)||'', svc: localStorage.getItem(KEYS.svc)||'', tpl: localStorage.getItem(KEYS.tpl)||'' };
+}
+function isCfg() { const c=loadCfg(); return !!(c.pub&&c.svc&&c.tpl); }
+
+function openConfig() {
+  const c=loadCfg();
+  document.getElementById('cfg-pub').value=c.pub;
+  document.getElementById('cfg-svc').value=c.svc;
+  document.getElementById('cfg-tpl').value=c.tpl;
+  document.getElementById('configModal').classList.add('show');
+}
+function closeConfig() { document.getElementById('configModal').classList.remove('show'); }
+function saveConfig() {
+  const pub=document.getElementById('cfg-pub').value.trim();
+  const svc=document.getElementById('cfg-svc').value.trim();
+  const tpl=document.getElementById('cfg-tpl').value.trim();
+  if(!pub||!svc||!tpl){alert('Please fill in all three fields.');return;}
+  localStorage.setItem(KEYS.pub,pub);
+  localStorage.setItem(KEYS.svc,svc);
+  localStorage.setItem(KEYS.tpl,tpl);
+  emailjs.init(pub);
+  document.getElementById('configBanner').classList.add('hidden');
+  closeConfig();
+  showStatus('success','✓ EmailJS configured! Ready to send receipts.');
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const c=loadCfg();
+  if(c.pub) emailjs.init(c.pub);
+  if(isCfg()) document.getElementById('configBanner').classList.add('hidden');
+  document.getElementById('donDate').value=new Date().toISOString().split('T')[0];
+});
+
+let method='cash';
+function setMethod(m){
+  method=m;
+  document.querySelectorAll('.pay-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`[data-m="${m}"]`).classList.add('active');
+  const cw=document.getElementById('checkWrap');
+  if(m==='check'){cw.classList.add('show');}
+  else{cw.classList.remove('show');document.getElementById('checkNum').value='';}
+}
+
+function fmtDate(s){
+  if(!s) return new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const [y,mo,d]=s.split('-');
+  return new Date(y,mo-1,d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+}
+function rid(){ return 'MI-'+Date.now().toString(36).toUpperCase().slice(-7); }
+function mLabel(){
+  const chk=document.getElementById('checkNum').value.trim();
+  return{cash:'Cash',zelle:'Zelle Transfer',check:chk?`Check #${chk}`:'Check'}[method];
+}
+
+function buildHTML(d){
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+body{font-family:Georgia,serif;margin:0;padding:0;background:#f4f4f0;color:#1a1a1a}
+.wrap{max-width:600px;margin:28px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.top{background:#0a4a2e;padding:26px 34px;text-align:center}
+.top h1{color:#fff;font-size:19px;margin:0 0 3px;letter-spacing:.3px}
+.top p{color:rgba(255,255,255,.65);font-family:sans-serif;font-size:11px;margin:0;letter-spacing:.5px;text-transform:uppercase}
+.body{padding:34px}
+.bismi{text-align:center;font-size:21px;color:#c9a84c;margin-bottom:22px;letter-spacing:2px}
+.greeting{font-size:14.5px;line-height:1.75;margin-bottom:22px}
+.box{background:#e8f5ee;border-left:4px solid #27a760;border-radius:6px;padding:18px 22px;margin:22px 0}
+.box h2{font-size:11px;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px;color:#1a6b42;margin:0 0 12px}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(39,167,96,.2);font-size:13.5px;font-family:sans-serif}
+.row:last-child{border-bottom:none}
+.row .l{color:#555}.row .v{font-weight:600;color:#0a4a2e}
+.amt{text-align:center;margin:26px 0}
+.amt .num{font-size:38px;font-weight:700;color:#0a4a2e;letter-spacing:-1px}
+.amt .lbl{font-size:12px;color:#999;font-family:sans-serif;margin-top:3px}
+.taxbox{background:#fdf6e3;border:1px solid #c9a84c;border-radius:6px;padding:13px 17px;font-size:12.5px;font-family:sans-serif;color:#5a4010;line-height:1.65;margin:22px 0}
+.sig{font-size:13.5px;font-family:sans-serif;color:#444;line-height:1.75}
+.foot{text-align:center;padding:20px 34px;background:#f8faf9;border-top:1px solid #eee;font-family:sans-serif;font-size:11.5px;color:#888;line-height:1.9}
+</style></head><body><div class="wrap">
+<div class="top"><h1>Masjid Ibrahim — American Waqf Foundation</h1><p>5500 Farm to Market 2920, Spring, TX 77388 &nbsp;·&nbsp; (832) 743-8303</p></div>
+<div class="body">
+<div class="bismi">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+<p class="greeting">Assalamu Alaikum wa Rahmatullahi wa Barakatuh,<br><br>
+Dear <strong>${d.name}</strong>,<br><br>
+JazakAllahu Khayran for your generous contribution to Masjid Ibrahim. May Allah (SWT) accept your donation and reward you and your family abundantly in this life and the hereafter.</p>
+<div class="box"><h2>Official Donation Receipt</h2>
+<div class="row"><span class="l">Receipt No.</span><span class="v">${d.rid}</span></div>
+<div class="row"><span class="l">Date</span><span class="v">${d.date}</span></div>
+<div class="row"><span class="l">Donor Name</span><span class="v">${d.name}</span></div>
+${d.address?`<div class="row"><span class="l">Address</span><span class="v">${d.address}</span></div>`:''}
+${d.phone?`<div class="row"><span class="l">Phone</span><span class="v">${d.phone}</span></div>`:''}
+<div class="row"><span class="l">Payment Method</span><span class="v">${d.method}</span></div>
+${d.notes?`<div class="row"><span class="l">Purpose</span><span class="v">${d.notes}</span></div>`:''}
+</div>
+<div class="amt"><div class="num">$${parseFloat(d.amount).toFixed(2)}</div><div class="lbl">Total Donation Received</div></div>
+<div class="taxbox"><strong>Tax Deductibility Notice:</strong> American Waqf Foundation (Masjid Ibrahim) is a registered 501(c)(3) nonprofit organization. No goods or services were provided in exchange for this contribution. This receipt may be used for tax deduction purposes. Please retain this document for your records.</div>
+<p class="sig">Your support helps maintain our masjid, support community programs, and strengthen the bonds of our ummah. We are deeply grateful for your generosity.<br><br>
+Barak Allahu Feek,<br><strong>The Administration</strong><br>Masjid Ibrahim · American Waqf Foundation</p>
+</div>
+<div class="foot">Masjid Ibrahim · American Waqf Foundation<br>5500 Farm to Market 2920, Spring, TX 77388<br>(832) 743-8303 · adminmasjidibrahim@gmail.com</div>
+</div></body></html>`;
+}
+
+async function sendReceipt(){
+  if(!isCfg()){openConfig();return;}
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const amount=document.getElementById('amount').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  const address=document.getElementById('address').value.trim();
+  const notes=document.getElementById('notes').value.trim();
+  const dateVal=document.getElementById('donDate').value;
+
+  if(!name){showStatus('error','Please enter the donor\'s name.');return;}
+  if(!email){showStatus('error','Please enter the donor\'s email address.');return;}
+  if(!amount||isNaN(+amount)||+amount<=0){showStatus('error','Please enter a valid donation amount.');return;}
+
+  const id=rid(), date=fmtDate(dateVal), ml=mLabel();
+  const html=buildHTML({name,email,amount,phone,address,notes,method:ml,rid:id,date});
+  const subject=`Donation Receipt — ${name} — $${parseFloat(amount).toFixed(2)} — ${date}`;
+
+  const btn=document.getElementById('sendBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner"></div> Sending…';
+  showStatus('loading','Sending receipt…');
+
+  const cfg=loadCfg();
+  const params={to_name:name,subject,html_body:html,receipt_id:id,donor_name:name,amount:`$${parseFloat(amount).toFixed(2)}`,pay_method:ml,don_date:date};
+
+  try{
+    await emailjs.send(cfg.svc,cfg.tpl,{...params,to_email:email},cfg.pub);
+    await emailjs.send(cfg.svc,cfg.tpl,{...params,to_email:'adminmasjidibrahim@gmail.com',to_name:'Masjid Ibrahim',subject:`[COPY] ${subject}`},cfg.pub);
+
+    showStatus('success',`✓ Receipt sent to ${email} and copy to adminmasjidibrahim@gmail.com — Receipt #${id}`);
+    btn.innerHTML='✓ Receipt Sent!';
+    btn.classList.add('sent');
+
+    setTimeout(()=>{
+      btn.disabled=false; btn.classList.remove('sent');
+      btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Donation Receipt';
+      ['name','email','phone','address','amount','notes','checkNum'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('donDate').value=new Date().toISOString().split('T')[0];
+      setMethod('cash');
+    },5000);
+
+  }catch(err){
+    console.error(err);
+    showStatus('error','Failed to send: '+(err?.text||err?.message||'Check your EmailJS keys and try again.'));
+    btn.disabled=false;
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Donation Receipt';
+  }
+}
+
+function showStatus(type,msg){
+  const el=document.getElementById('statusBar');
+  const icons={success:'✓',error:'⚠',loading:'⏳'};
+  el.className=`status ${type} show`;
+  el.innerHTML=`<span class="status-icon">${icons[type]||''}</span><span>${msg}</span>`;
+}
+
+document.getElementById('configModal').addEventListener('click',(e)=>{
+  if(e.target.id==='configModal') closeConfig();
+});
+</script>
+</body>
+</html>
