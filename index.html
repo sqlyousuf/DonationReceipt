@@ -236,7 +236,9 @@
     </div>
     <div class="tip-box">
       <strong>Template variables to use in EmailJS dashboard:</strong><br>
-      <code>{{to_email}}</code> &nbsp;<code>{{to_name}}</code> &nbsp;<code>{{subject}}</code> &nbsp;<code>{{html_body}}</code><br><br>
+      <code>{{to_email}}</code> &nbsp;<code>{{to_name}}</code> &nbsp;<code>{{subject}}</code> &nbsp;<code>{{{html_body}}}</code> &nbsp;<code>{{plain_body}}</code><br><br>
+      For HTML emails, use <code>{{{html_body}}}</code> (triple braces) in a <strong>text/html</strong> EmailJS template.<br>
+      For plain fallback, use <code>{{plain_body}}</code>.<br>
       Set <strong>To Email</strong> = <code>{{to_email}}</code><br>
       Add a <strong>BCC</strong> field = <code>adminmasjidibrahim@gmail.com</code> to always get a copy.
     </div>
@@ -351,6 +353,27 @@ Barak Allahu Feek,<br><strong>The Administration</strong><br>Masjid Ibrahim · A
 </div></body></html>`;
 }
 
+function buildPlainText(d){
+  return [
+    'Masjid Ibrahim - American Waqf Foundation',
+    '',
+    `Receipt No.: ${d.rid}`,
+    `Date: ${d.date}`,
+    `Donor Name: ${d.name}`,
+    d.address ? `Address: ${d.address}` : '',
+    d.phone ? `Phone: ${d.phone}` : '',
+    `Payment Method: ${d.method}`,
+    d.notes ? `Purpose: ${d.notes}` : '',
+    `Amount: $${parseFloat(d.amount).toFixed(2)}`,
+    '',
+    'Tax Deductibility Notice: American Waqf Foundation (Masjid Ibrahim) is a registered 501(c)(3) nonprofit organization. No goods or services were provided in exchange for this contribution. This receipt may be used for tax deduction purposes.',
+    '',
+    'Barak Allahu Feek,',
+    'The Administration',
+    'Masjid Ibrahim - American Waqf Foundation'
+  ].filter(Boolean).join('\n');
+}
+
 async function sendReceipt(){
   if(!isCfg()){openConfig();return;}
   const name=document.getElementById('name').value.trim();
@@ -366,7 +389,9 @@ async function sendReceipt(){
   if(!amount||isNaN(+amount)||+amount<=0){showStatus('error','Please enter a valid donation amount.');return;}
 
   const id=rid(), date=fmtDate(dateVal), ml=mLabel();
-  const html=buildHTML({name,email,amount,phone,address,notes,method:ml,rid:id,date});
+  const data={name,email,amount,phone,address,notes,method:ml,rid:id,date};
+  const html=buildHTML(data);
+  const plain=buildPlainText(data);
   const subject=`Donation Receipt — ${name} — $${parseFloat(amount).toFixed(2)} — ${date}`;
 
   const btn=document.getElementById('sendBtn');
@@ -375,7 +400,19 @@ async function sendReceipt(){
   showStatus('loading','Sending receipt…');
 
   const cfg=loadCfg();
-  const params={to_name:name,subject,html_body:html,receipt_id:id,donor_name:name,amount:`$${parseFloat(amount).toFixed(2)}`,pay_method:ml,don_date:date};
+  const params={
+    to_name:name,
+    subject,
+    html_body:html,
+    plain_body:plain,
+    message:plain,
+    message_html:html,
+    receipt_id:id,
+    donor_name:name,
+    amount:`$${parseFloat(amount).toFixed(2)}`,
+    pay_method:ml,
+    don_date:date
+  };
 
   try{
     await emailjs.send(cfg.svc,cfg.tpl,{...params,to_email:email},cfg.pub);
