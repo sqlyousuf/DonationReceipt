@@ -314,9 +314,9 @@ body{font-family:Georgia,serif;margin:0;padding:0;background:#f4f7fb;color:#1a1a
 .greeting{font-size:14.5px;line-height:1.75;margin-bottom:22px}
 .box{background:#eaf1fb;border-left:4px solid #2f6fdb;border-radius:6px;padding:18px 22px;margin:22px 0}
 .box h2{font-size:11px;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px;color:#1f4f82;margin:0 0 12px}
-.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(47,111,219,.2);font-size:13.5px;font-family:sans-serif}
+.row{display:grid;grid-template-columns:minmax(160px,1fr) auto;column-gap:24px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(47,111,219,.2);font-size:13.5px;font-family:sans-serif}
 .row:last-child{border-bottom:none}
-.row .l{color:#555}.row .v{font-weight:600;color:#102a43}
+.row .l{color:#555}.row .v{font-weight:600;color:#102a43;text-align:right;}
 .amt{text-align:center;margin:26px 0}
 .amt .num{font-size:38px;font-weight:700;color:#102a43;letter-spacing:-1px}
 .amt .lbl{font-size:12px;color:#999;font-family:sans-serif;margin-top:3px}
