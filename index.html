@@ -6,6 +6,7 @@
 <title>Masjid Ibrahim — Donation Receipt</title>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -70,6 +71,9 @@
   .btn-submit:active:not(:disabled) { transform: scale(0.99); }
   .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
   .btn-submit.sent { background: #163a63; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-download { width: 100%; padding: 14px 20px; background: white; color: var(--green-dark); border: 1.5px solid #bfd1ef; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+  .btn-download:hover { background: #eef4ff; border-color: #95b4e8; }
 
   .status { display: none; align-items: flex-start; gap: 10px; padding: 13px 16px; border-radius: 9px; font-size: 13.5px; margin-top: 14px; line-height: 1.5; }
   .status.show { display: flex; }
@@ -99,6 +103,7 @@
   @media (max-width: 520px) {
     .main { padding: 16px 14px 32px; }
     .form-grid { grid-template-columns: 1fr; }
+    .actions { grid-template-columns: 1fr; }
     .header-arabic { display: none; }
     .header { padding: 18px 18px 16px; }
   }
@@ -189,12 +194,15 @@
     </div>
   </div>
 
-  <button class="btn-submit" id="sendBtn" onclick="sendReceipt()">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-    </svg>
-    Send Donation Receipt
-  </button>
+  <div class="actions">
+    <button class="btn-submit" id="sendBtn" onclick="sendReceipt()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+      Send Donation Receipt
+    </button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()">Download PDF Receipt</button>
+  </div>
 
   <div class="status" id="statusBar"></div>
 
@@ -302,6 +310,24 @@ function mLabel(){
   return{cash:'Cash',zelle:'Zelle Transfer',check:chk?`Check #${chk}`:'Check'}[method];
 }
 
+function collectReceiptData(requireEmail){
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const amount=document.getElementById('amount').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  const address=document.getElementById('address').value.trim();
+  const notes=document.getElementById('notes').value.trim();
+  const dateVal=document.getElementById('donDate').value;
+
+  if(!name){showStatus('error','Please enter the donor\'s name.');return null;}
+  if(requireEmail && !email){showStatus('error','Please enter the donor\'s email address.');return null;}
+  if(!amount||isNaN(+amount)||+amount<=0){showStatus('error','Please enter a valid donation amount.');return null;}
+
+  const id=rid();
+  const date=fmtDate(dateVal);
+  return { name,email,amount,phone,address,notes,method:mLabel(),rid:id,date };
+}
+
 function buildHTML(d){
   return`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 body{font-family:Georgia,serif;margin:0;padding:0;background:#f4f7fb;color:#1a1a1a}
@@ -372,20 +398,10 @@ function buildPlainText(d){
 
 async function sendReceipt(){
   if(!isCfg()){openConfig();return;}
-  const name=document.getElementById('name').value.trim();
-  const email=document.getElementById('email').value.trim();
-  const amount=document.getElementById('amount').value.trim();
-  const phone=document.getElementById('phone').value.trim();
-  const address=document.getElementById('address').value.trim();
-  const notes=document.getElementById('notes').value.trim();
-  const dateVal=document.getElementById('donDate').value;
+  const data=collectReceiptData(true);
+  if(!data) return;
 
-  if(!name){showStatus('error','Please enter the donor\'s name.');return;}
-  if(!email){showStatus('error','Please enter the donor\'s email address.');return;}
-  if(!amount||isNaN(+amount)||+amount<=0){showStatus('error','Please enter a valid donation amount.');return;}
-
-  const id=rid(), date=fmtDate(dateVal), ml=mLabel();
-  const data={name,email,amount,phone,address,notes,method:ml,rid:id,date};
+  const { name,email,amount,rid:id,date }=data;
   const html=buildHTML(data);
   const plain=buildPlainText(data);
   const subject=`Donation Receipt — ${name} — $${parseFloat(amount).toFixed(2)} — ${date}`;
@@ -408,7 +424,7 @@ async function sendReceipt(){
     receipt_id:id,
     donor_name:name,
     amount:`$${parseFloat(amount).toFixed(2)}`,
-    pay_method:ml,
+    pay_method:data.method,
     don_date:date
   };
 
@@ -434,6 +450,77 @@ async function sendReceipt(){
     btn.disabled=false;
     btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Donation Receipt';
   }
+}
+
+function downloadReceiptPDF(){
+  const data=collectReceiptData(false);
+  if(!data) return;
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showStatus('error','PDF generator failed to load. Please refresh and try again.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const left = 52;
+  const right = 560;
+  let y = 56;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.text('Masjid Ibrahim', left, y);
+  y += 20;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text('5500 Farm to Market 2920, Spring, TX 77388  |  (832) 743-8303', left, y);
+  y += 24;
+  doc.setDrawColor(16, 42, 67);
+  doc.line(left, y, right, y);
+  y += 26;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.text('Official Donation Receipt', left, y);
+  y += 22;
+
+  const rows = [
+    ['Receipt No.', data.rid],
+    ['Date', data.date],
+    ['Donor Name', data.name],
+    data.address ? ['Address', data.address] : null,
+    data.phone ? ['Phone', data.phone] : null,
+    ['Payment Method', data.method],
+    data.notes ? ['Purpose', data.notes] : null,
+    ['Amount', `$${parseFloat(data.amount).toFixed(2)}`]
+  ].filter(Boolean);
+
+  doc.setFontSize(11);
+  rows.forEach(([label, value]) => {
+    doc.setFont('helvetica','bold');
+    doc.text(String(label), left, y);
+    doc.setFont('helvetica','normal');
+    const wrapped = doc.splitTextToSize(String(value), 300);
+    doc.text(wrapped, left + 160, y);
+    y += Math.max(18, wrapped.length * 14);
+  });
+
+  y += 14;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  const taxNotice = 'Tax Deductibility Notice: American Waqf Foundation (EIN: 84-2645759) is a registered 501(c)(3) nonprofit organization. No goods or services were provided in exchange for this contribution. This receipt may be used for tax deduction purposes. Please retain this document for your records.';
+  const notice = doc.splitTextToSize(taxNotice, right - left);
+  doc.text(notice, left, y);
+  y += notice.length * 13 + 18;
+
+  doc.setFont('helvetica','bold');
+  doc.text('The Administration', left, y);
+  y += 14;
+  doc.setFont('helvetica','normal');
+  doc.text('Masjid Ibrahim', left, y);
+
+  const safeName = data.name.replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '-');
+  doc.save(`donation-receipt-${safeName || 'donor'}-${data.rid}.pdf`);
+  showStatus('success',`✓ PDF receipt downloaded — Receipt #${data.rid}`);
 }
 
 function showStatus(type,msg){
