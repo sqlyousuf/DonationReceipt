@@ -194,14 +194,20 @@
     </div>
   </div>
 
-  <div class="actions" style="grid-template-columns: 1fr 1fr 1fr;">
+  <div class="actions" style="grid-template-columns: 1fr 1fr;">
     <button class="btn-submit" id="sendBtn" onclick="sendReceipt()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
       </svg>
       Send Donation Receipt
     </button>
-    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()" style="grid-column: span 1;">Download PDF Receipt</button>
+    <button class="btn-submit" id="sendPlainBtn" onclick="sendGenericReceipt()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+      Send Receipt
+    </button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()">Download PDF Receipt</button>
     <button class="btn-download" id="downloadPlainBtn" onclick="downloadReceipt()">Download Receipt</button>
   </div>
 
@@ -418,6 +424,72 @@ function buildPlainText(d){
   ].filter(Boolean).join('\n');
 }
 
+function buildGenericReceiptHTML(d){
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+body{font-family:Georgia,serif;margin:0;padding:0;background:#f4f7fb;color:#1a1a1a}
+.wrap{max-width:600px;margin:28px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.top{background:#102a43;padding:26px 34px;text-align:center}
+.top img{width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px}
+.top h1{color:#fff;font-size:19px;margin:0 0 3px;letter-spacing:.3px}
+.top p{color:rgba(255,255,255,.65);font-family:sans-serif;font-size:11px;margin:0;letter-spacing:.5px;text-transform:uppercase}
+.body{padding:34px}
+.bismi{text-align:center;font-size:21px;color:#c9a84c;margin-bottom:22px;letter-spacing:2px}
+.greeting{font-size:14.5px;line-height:1.75;margin-bottom:22px}
+.box{background:#eaf1fb;border-left:4px solid #2f6fdb;border-radius:6px;padding:18px 22px;margin:22px 0}
+.box h2{font-size:11px;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px;color:#1f4f82;margin:0 0 12px}
+.row{display:grid;grid-template-columns:minmax(160px,1fr) auto;column-gap:24px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(47,111,219,.2);font-size:13.5px;font-family:sans-serif}
+.row:last-child{border-bottom:none}
+.row .l{color:#555}.row .v{font-weight:600;color:#102a43;text-align:right;}
+.amt{text-align:center;margin:26px 0}
+.amt .num{font-size:38px;font-weight:700;color:#102a43;letter-spacing:-1px}
+.amt .lbl{font-size:12px;color:#999;font-family:sans-serif;margin-top:3px}
+.sig{font-size:13.5px;font-family:sans-serif;color:#444;line-height:1.75}
+.foot{text-align:center;padding:20px 34px;background:#f8faf9;border-top:1px solid #eee;font-family:sans-serif;font-size:11.5px;color:#888;line-height:1.9}
+</style></head><body><div class="wrap">
+<div class="top"><img src="https://donation-receipt.vercel.app/Ibrahim%20Logo%20Circle%20(1).png" alt="Masjid Ibrahim Logo"/><h1>Masjid Ibrahim</h1><p>5500 Farm to Market 2920, Spring, TX 77388 &nbsp;·&nbsp; (832) 743-8303</p></div>
+<div class="body">
+<div class="bismi">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+<p class="greeting">Assalamu Alaikum wa Rahmatullahi wa Barakatuh,<br><br>
+Dear <strong>${d.name}</strong>,<br><br>
+This receipt confirms the transaction detailed below.</p>
+<div class="box"><h2>Receipt</h2>
+<div class="row"><span class="l">Receipt No.</span><span class="v">${d.rid}</span></div>
+<div class="row"><span class="l">Date</span><span class="v">${d.date}</span></div>
+<div class="row"><span class="l">Received from</span><span class="v">${d.name}</span></div>
+${d.address?`<div class="row"><span class="l">Address</span><span class="v">${d.address}</span></div>`:''}
+${d.phone?`<div class="row"><span class="l">Phone</span><span class="v">${d.phone}</span></div>`:''}
+<div class="row"><span class="l">Payment Method</span><span class="v">${d.method}</span></div>
+${d.notes?`<div class="row"><span class="l">For</span><span class="v">${d.notes}</span></div>`:''}
+</div>
+<div class="amt"><div class="num">$${parseFloat(d.amount).toFixed(2)}</div><div class="lbl">Amount Received</div></div>
+<p class="sig">Thank you for your transaction.<br><br>
+Best regards,<br><strong>The Administration</strong><br>Masjid Ibrahim</p>
+</div>
+<div class="foot">Masjid Ibrahim · American Waqf Foundation<br>5500 Farm to Market 2920, Spring, TX 77388<br>(832) 743-8303 · admin@kleinislamiccenter.org</div>
+</div></body></html>`;
+}
+
+function buildGenericReceiptPlainText(d){
+  return [
+    'Masjid Ibrahim - American Waqf Foundation',
+    '',
+    `Receipt No.: ${d.rid}`,
+    `Date: ${d.date}`,
+    `Received from: ${d.name}`,
+    d.address ? `Address: ${d.address}` : '',
+    d.phone ? `Phone: ${d.phone}` : '',
+    `Payment Method: ${d.method}`,
+    d.notes ? `For: ${d.notes}` : '',
+    `Amount: $${parseFloat(d.amount).toFixed(2)}`,
+    '',
+    'Thank you for your transaction.',
+    '',
+    'Best regards,',
+    'The Administration',
+    'Masjid Ibrahim - American Waqf Foundation'
+  ].filter(Boolean).join('\n');
+}
+
 async function sendReceipt(){
   if(!isCfg()){openConfig();return;}
   const data=collectReceiptData(true);
@@ -471,6 +543,62 @@ async function sendReceipt(){
     showStatus('error','Failed to send: '+(err?.text||err?.message||'Check your EmailJS keys and try again.'));
     btn.disabled=false;
     btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Donation Receipt';
+  }
+}
+
+async function sendGenericReceipt(){
+  if(!isCfg()){openConfig();return;}
+  const data=collectReceiptData(true);
+  if(!data) return;
+
+  const { name,email,amount,rid:id,date }=data;
+  const html=buildGenericReceiptHTML(data);
+  const plain=buildGenericReceiptPlainText(data);
+  const subject=`Receipt — ${name} — $${parseFloat(amount).toFixed(2)} — ${date}`;
+
+  const btn=document.getElementById('sendPlainBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner"></div> Sending…';
+  showStatus('loading','Sending receipt…');
+
+  const cfg=loadCfg();
+  const params={
+    to_name:name,
+    subject,
+    html_body:html,
+    plain_body:plain,
+    message:plain,
+    message_html:html,
+    from_email:ORG_EMAIL,
+    reply_to:ORG_EMAIL,
+    receipt_id:id,
+    donor_name:name,
+    amount:`$${parseFloat(amount).toFixed(2)}`,
+    pay_method:data.method,
+    don_date:date
+  };
+
+  try{
+    await emailjs.send(cfg.svc,cfg.tpl,{...params,to_email:email},cfg.pub);
+    await emailjs.send(cfg.svc,cfg.tpl,{...params,to_email:ORG_EMAIL,to_name:'Masjid Ibrahim',subject:`[COPY] ${subject}`},cfg.pub);
+
+    showStatus('success',`✓ Receipt sent to ${email} and copy to ${ORG_EMAIL} — Receipt #${id}`);
+    btn.innerHTML='✓ Receipt Sent!';
+    btn.classList.add('sent');
+
+    setTimeout(()=>{
+      btn.disabled=false; btn.classList.remove('sent');
+      btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Receipt';
+      ['name','email','phone','address','amount','notes','checkNum'].forEach(i=>document.getElementById(i).value='');
+      document.getElementById('donDate').value=new Date().toISOString().split('T')[0];
+      setMethod('cash');
+    },5000);
+
+  }catch(err){
+    console.error(err);
+    showStatus('error','Failed to send: '+(err?.text||err?.message||'Check your EmailJS keys and try again.'));
+    btn.disabled=false;
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Receipt';
   }
 }
 
