@@ -194,14 +194,15 @@
     </div>
   </div>
 
-  <div class="actions">
+  <div class="actions" style="grid-template-columns: 1fr 1fr 1fr;">
     <button class="btn-submit" id="sendBtn" onclick="sendReceipt()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
       </svg>
       Send Donation Receipt
     </button>
-    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()">Download PDF Receipt</button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()" style="grid-column: span 1;">Download PDF Receipt</button>
+    <button class="btn-download" id="downloadPlainBtn" onclick="downloadReceipt()">Download Receipt</button>
   </div>
 
   <div class="status" id="statusBar"></div>
@@ -594,6 +595,118 @@ async function downloadReceiptPDF(){
   const safeName = data.name.replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '-');
   doc.save(`donation-receipt-${safeName || 'donor'}-${data.rid}.pdf`);
   showStatus('success',`✓ PDF receipt downloaded — Receipt #${data.rid}`);
+}
+
+async function downloadReceipt(){
+  const data=collectReceiptData(false);
+  if(!data) return;
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showStatus('error','PDF generator failed to load. Please refresh and try again.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const left = 40;
+  const right = 572;
+  const contentW = right - left;
+  let y = 40;
+
+  doc.setFillColor(244, 247, 251);
+  doc.rect(0, 0, 612, 792, 'F');
+
+  doc.setFillColor(16, 42, 67);
+  doc.roundedRect(left, y, contentW, 104, 10, 10, 'F');
+
+  const logoUrl = 'https://donation-receipt.vercel.app/Ibrahim%20Logo%20Circle%20(1).png';
+  const logo = await loadImageAsDataUrl(logoUrl);
+  if(logo){
+    doc.addImage(logo, 'PNG', left + 18, y + 18, 48, 48);
+  }
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Masjid Ibrahim', left + 78, y + 42);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text('5500 Farm to Market 2920, Spring, TX 77388  |  (832) 743-8303', left + 78, y + 62);
+
+  y += 128;
+  doc.setTextColor(16, 42, 67);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Receipt', left, y);
+  y += 16;
+
+  doc.setDrawColor(214, 227, 245);
+  doc.line(left, y, right, y);
+  y += 16;
+
+  const rows = [
+    ['Receipt No.', data.rid],
+    ['Date', data.date],
+    ['Received from', data.name],
+    data.address ? ['Address', data.address] : null,
+    data.phone ? ['Phone', data.phone] : null,
+    ['Payment Method', data.method],
+    data.notes ? ['For', data.notes] : null,
+    ['Amount', `$${parseFloat(data.amount).toFixed(2)}`]
+  ].filter(Boolean);
+
+  doc.setFillColor(234, 241, 251);
+  doc.roundedRect(left, y, contentW, 220, 8, 8, 'F');
+  doc.setDrawColor(47, 111, 219);
+  doc.setLineWidth(2);
+  doc.line(left + 2, y + 8, left + 2, y + 212);
+  doc.setLineWidth(1);
+
+  let rowY = y + 24;
+  doc.setFontSize(11);
+  rows.forEach(([label, value]) => {
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(82, 95, 127);
+    doc.text(String(label), left + 16, rowY);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(16, 42, 67);
+    const wrapped = doc.splitTextToSize(String(value), 300);
+    doc.text(wrapped, left + 190, rowY);
+    rowY += Math.max(20, wrapped.length * 14);
+  });
+
+  y += 234;
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(left + 120, y, contentW - 240, 72, 8, 8, 'F');
+  doc.setDrawColor(214, 227, 245);
+  doc.roundedRect(left + 120, y, contentW - 240, 72, 8, 8, 'S');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(32);
+  doc.setTextColor(16, 42, 67);
+  doc.text(`$${parseFloat(data.amount).toFixed(2)}`, left + contentW/2, y + 36, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text('Amount Received', left + contentW/2, y + 54, { align: 'center' });
+
+  y += 90;
+
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(68, 68, 68);
+  doc.text('The Administration', left, y);
+  y += 14;
+  doc.setFont('helvetica','normal');
+  doc.text('Masjid Ibrahim', left, y);
+
+  doc.setFillColor(248, 250, 249);
+  doc.rect(left, 730, contentW, 40, 'F');
+  doc.setFontSize(9);
+  doc.setTextColor(120, 130, 148);
+  doc.text('Masjid Ibrahim · American Waqf Foundation  |  admin@kleinislamiccenter.org', left + contentW/2, 754, { align: 'center' });
+
+  const safeName = data.name.replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/\s+/g, '-');
+  doc.save(`receipt-${safeName || 'received'}-${data.rid}.pdf`);
+  showStatus('success',`✓ Receipt downloaded — Receipt #${data.rid}`);
 }
 
 function showStatus(type,msg){
