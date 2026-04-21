@@ -205,10 +205,10 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
       </svg>
-      Send Receipt
+      Send General Receipt
     </button>
-    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()">Download PDF Receipt</button>
-    <button class="btn-download" id="downloadPlainBtn" onclick="downloadReceipt()">Download Receipt</button>
+    <button class="btn-download" id="downloadBtn" onclick="downloadReceiptPDF()">Download Donation Receipt</button>
+    <button class="btn-download" id="downloadPlainBtn" onclick="downloadReceipt()">Download General Receipt</button>
   </div>
 
   <div class="status" id="statusBar"></div>
@@ -588,7 +588,7 @@ async function sendGenericReceipt(){
 
     setTimeout(()=>{
       btn.disabled=false; btn.classList.remove('sent');
-      btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Receipt';
+      btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send General Receipt';
       ['name','email','phone','address','amount','notes','checkNum'].forEach(i=>document.getElementById(i).value='');
       document.getElementById('donDate').value=new Date().toISOString().split('T')[0];
       setMethod('cash');
